@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  abbreviateModel,
+  abbreviateProvider,
+  abbreviateThink,
+  abbreviateTokenPercent,
   extractContentFromMessage,
   extractTextFromMessage,
   extractThinkingFromMessage,
@@ -355,5 +359,87 @@ describe("sanitizeRenderableText", () => {
     const sanitized = sanitizeRenderableText(input);
 
     expect(sanitized).toBe(input);
+  });
+});
+
+describe("abbreviateProvider", () => {
+  it("maps known providers", () => {
+    expect(abbreviateProvider("github-copilot")).toBe("copilot");
+    expect(abbreviateProvider("anthropic")).toBe("ant");
+    expect(abbreviateProvider("openai")).toBe("oai");
+    expect(abbreviateProvider("google")).toBe("google");
+    expect(abbreviateProvider("manifest")).toBe("mnfst");
+  });
+
+  it("shortens unknown long providers by taking after last dash", () => {
+    expect(abbreviateProvider("some-custom-provider")).toBe("provider");
+  });
+
+  it("returns short unknown providers as-is", () => {
+    expect(abbreviateProvider("local")).toBe("local");
+    expect(abbreviateProvider("ollama")).toBe("ollama");
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(abbreviateProvider("")).toBe("");
+  });
+});
+
+describe("abbreviateModel", () => {
+  it("maps known models", () => {
+    expect(abbreviateModel("claude-sonnet-4.6")).toBe("sonnet-4.6");
+    expect(abbreviateModel("claude-opus-4")).toBe("opus-4");
+    expect(abbreviateModel("gpt-4o")).toBe("4o");
+    expect(abbreviateModel("gpt-4o-mini")).toBe("4o-mini");
+    expect(abbreviateModel("gemini-2.5-pro")).toBe("gem-2.5");
+  });
+
+  it("strips claude- prefix for unknown claude models", () => {
+    expect(abbreviateModel("claude-future-99")).toBe("future-99");
+  });
+
+  it("passes through unknown models", () => {
+    expect(abbreviateModel("local")).toBe("local");
+    expect(abbreviateModel("qwen3.6:27b")).toBe("qwen3.6:27b");
+  });
+
+  it("returns unknown for empty input", () => {
+    expect(abbreviateModel("")).toBe("unknown");
+  });
+});
+
+describe("abbreviateThink", () => {
+  it("returns null for off", () => {
+    expect(abbreviateThink("off")).toBeNull();
+  });
+
+  it("abbreviates medium and minimal", () => {
+    expect(abbreviateThink("medium")).toBe("med");
+    expect(abbreviateThink("minimal")).toBe("min");
+  });
+
+  it("passes through high, low, etc.", () => {
+    expect(abbreviateThink("high")).toBe("high");
+    expect(abbreviateThink("low")).toBe("low");
+  });
+});
+
+describe("abbreviateTokenPercent", () => {
+  it("returns percentage string", () => {
+    expect(abbreviateTokenPercent(24000, 200000)).toBe("(12%)");
+  });
+
+  it("returns null when data is missing", () => {
+    expect(abbreviateTokenPercent(null, null)).toBeNull();
+    expect(abbreviateTokenPercent(1000, null)).toBeNull();
+    expect(abbreviateTokenPercent(null, 200000)).toBeNull();
+  });
+
+  it("returns null when context is zero", () => {
+    expect(abbreviateTokenPercent(1000, 0)).toBeNull();
+  });
+
+  it("caps at 999%", () => {
+    expect(abbreviateTokenPercent(2000000, 100000)).toBe("(999%)");
   });
 });

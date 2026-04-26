@@ -385,6 +385,82 @@ export function formatTokens(total?: number | null, context?: number | null) {
   return `tokens ${totalLabel}/${formatTokenCount(context)}${pct !== null ? ` (${pct}%)` : ""}`;
 }
 
+/* ── Compact footer abbreviation helpers ───────────────────────── */
+
+const PROVIDER_ABBREV: Record<string, string> = {
+  "github-copilot": "copilot",
+  anthropic: "ant",
+  openai: "oai",
+  google: "google",
+  manifest: "mnfst",
+};
+
+const MODEL_ABBREV: Record<string, string> = {
+  "claude-sonnet-4.6": "sonnet-4.6",
+  "claude-sonnet-4-5": "sonnet-4.5",
+  "claude-sonnet-4": "sonnet-4",
+  "claude-opus-4.6": "opus-4.6",
+  "claude-opus-4": "opus-4",
+  "claude-haiku-3.5": "haiku-3.5",
+  "gpt-4o": "4o",
+  "gpt-4o-mini": "4o-mini",
+  "gemini-2.5-pro": "gem-2.5",
+  "gemini-2.5-flash": "gem-2.5f",
+};
+
+const THINK_ABBREV: Record<string, string> = {
+  medium: "med",
+  minimal: "min",
+};
+
+export function abbreviateProvider(provider: string): string {
+  if (!provider) {
+    return "";
+  }
+  const lower = provider.toLowerCase();
+  if (PROVIDER_ABBREV[lower]) {
+    return PROVIDER_ABBREV[lower];
+  }
+  // Unknown: take everything after the last hyphen, or use as-is if short
+  const lastDash = lower.lastIndexOf("-");
+  if (lastDash > 0 && lower.length > 10) {
+    return lower.slice(lastDash + 1);
+  }
+  return lower;
+}
+
+export function abbreviateModel(model: string): string {
+  if (!model) {
+    return "unknown";
+  }
+  if (MODEL_ABBREV[model]) {
+    return MODEL_ABBREV[model];
+  }
+  // Strip "claude-" prefix if present
+  if (model.startsWith("claude-")) {
+    return model.slice(7);
+  }
+  return model;
+}
+
+export function abbreviateThink(level: string): string | null {
+  if (!level || level === "off") {
+    return null;
+  }
+  return THINK_ABBREV[level] ?? level;
+}
+
+export function abbreviateTokenPercent(
+  total: number | null | undefined,
+  context: number | null | undefined,
+): string | null {
+  if (typeof total !== "number" || typeof context !== "number" || context <= 0) {
+    return null;
+  }
+  const pct = Math.min(999, Math.round((total / context) * 100));
+  return `(${pct}%)`;
+}
+
 export function formatContextUsageLine(params: {
   total?: number | null;
   context?: number | null;
