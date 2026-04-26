@@ -24,7 +24,12 @@ import { GatewayChatClient } from "./gateway-chat.js";
 import { editorTheme, theme } from "./theme/theme.js";
 import { createCommandHandlers } from "./tui-command-handlers.js";
 import { createEventHandlers } from "./tui-event-handlers.js";
-import { formatTokens } from "./tui-formatters.js";
+import {
+  abbreviateModel,
+  abbreviateProvider,
+  abbreviateThink,
+  abbreviateTokenPercent,
+} from "./tui-formatters.js";
 import { createLocalShellRunner } from "./tui-local-shell.js";
 import { createOverlayHandlers } from "./tui-overlays.js";
 import { createSessionActions } from "./tui-session-actions.js";
@@ -656,17 +661,9 @@ export async function runTui(opts: TuiOptions) {
   };
 
   const updateFooter = () => {
-    const sessionKeyLabel = formatSessionKey(currentSessionKey);
-    const sessionLabel = sessionInfo.displayName
-      ? `${sessionKeyLabel} (${sessionInfo.displayName})`
-      : sessionKeyLabel;
-    const agentLabel = formatAgentLabel(currentAgentId);
-    const modelLabel = sessionInfo.model
-      ? sessionInfo.modelProvider
-        ? `${sessionInfo.modelProvider}/${sessionInfo.model}`
-        : sessionInfo.model
-      : "unknown";
-    const tokens = formatTokens(sessionInfo.totalTokens ?? null, sessionInfo.contextTokens ?? null);
+    const provider = abbreviateProvider(sessionInfo.modelProvider ?? "");
+    const model = abbreviateModel(sessionInfo.model ?? "");
+    const modelLabel = provider ? `${provider}/${model}` : model || "unknown";
     const think = sessionInfo.thinkingLevel ?? "off";
     const fast = sessionInfo.fastMode === true;
     const verbose = sessionInfo.verboseLevel ?? "off";
@@ -674,14 +671,12 @@ export async function runTui(opts: TuiOptions) {
     const reasoningLabel =
       reasoning === "on" ? "reasoning" : reasoning === "stream" ? "reasoning:stream" : null;
     const footerParts = [
-      `agent ${agentLabel}`,
-      `session ${sessionLabel}`,
       modelLabel,
-      think !== "off" ? `think ${think}` : null,
+      abbreviateThink(think),
       fast ? "fast" : null,
       verbose !== "off" ? `verbose ${verbose}` : null,
       reasoningLabel,
-      tokens,
+      abbreviateTokenPercent(sessionInfo.totalTokens ?? null, sessionInfo.contextTokens ?? null),
     ].filter(Boolean);
     footer.setText(theme.dim(footerParts.join(" | ")));
   };
