@@ -58,6 +58,12 @@ import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
 } from "../shared/string-coerce.js";
+import {
+  abbreviateModel,
+  abbreviateProvider,
+  abbreviateThink,
+  abbreviateTokenPercent,
+} from "../tui/tui-formatters.js";
 import { escapeRegExp } from "../utils.js";
 import { loadOrCreateDeviceIdentity } from "./device-identity.js";
 import { formatErrorMessage, hasErrnoCode } from "./errors.js";
@@ -1062,6 +1068,24 @@ export async function runHeartbeatOnce(opts: {
       normalized.text = execFallbackText;
       normalized.shouldSkip = false;
     }
+    // Append compact model/think/token footer to outbound channel replies.
+    // Mirrors the TUI footer format so channel recipients see the same context.
+    if (!normalized.shouldSkip && normalized.text) {
+      const footerParts = [
+        `${abbreviateProvider(entry?.modelProvider ?? "")}/${abbreviateModel(entry?.model ?? "")}`,
+        abbreviateThink(entry?.thinkingLevel ?? "off"),
+        abbreviateTokenPercent(entry?.totalTokens ?? null, entry?.contextTokens ?? null),
+        entry?.fastMode ? "fast" : null,
+        entry?.verboseLevel && entry.verboseLevel !== "off" ? entry.verboseLevel : null,
+        entry?.reasoningLevel && entry.reasoningLevel !== "off" ? "reasoning" : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+      if (footerParts) {
+        normalized.text = `${normalized.text}\n${footerParts}`;
+      }
+    }
+
     const shouldSkipMain = normalized.shouldSkip && !normalized.hasMedia && !hasExecCompletion;
     if (shouldSkipMain && reasoningPayloads.length === 0) {
       await restoreHeartbeatUpdatedAt({
